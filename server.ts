@@ -5,6 +5,7 @@ import multer from "multer";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import { Client } from "@notionhq/client";
+import { hasGmailCredentials, sendGmailMessage, buildPreinscripcionEmail, buildMaterialEmail } from "./email";
 
 dotenv.config();
 
@@ -467,15 +468,34 @@ app.post("/api/upload-part", upload.single("file"), async (req, res) => {
   const { part_number } = req.body || {};
   if (!upload_id) return res.status(400).json({ error: "Se requiere upload_id." });
   try {
-    const form = new FormData();
-    if (part_number) form.append("part_number", String(part_number));
-    form.append("file", new Blob([new Uint8Array(fs.readFileSync(req.file.path))], { type: req.file.mimetype || "application/octet-stream" }), req.file.originalname || "file");
-    const sendRes = await fetch(`${NOTION_API_BASE_URL}/file_uploads/${upload_id}/send`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${config.notionSecret}`, "Notion-Version": NOTION_API_VER },
-      body: form,
-    });
-    if (!sendRes.ok) throw new Error(`Notion rechazó el chunk: ${sendRes.status} - ${await sendRes.text()}`);
+    const fileBytes = new Uint8Array(fs.readFileSync(req.file.path));
+    // Reintento ante fallos de red transitorios ("fetch failed") o throttling de
+    // Notion (429/5xx), que ocurren cuando varias partes llegan muy seguidas.
+    let sendRes: Response | null = null;
+    let lastErr: any = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const form = new FormData();
+        if (part_number) form.append("part_number", String(part_number));
+        form.append("file", new Blob([fileBytes], { type: req.file.mimetype || "application/octet-stream" }), req.file.originalname || "file");
+        sendRes = await fetch(`${NOTION_API_BASE_URL}/file_uploads/${upload_id}/send`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${config.notionSecret}`, "Notion-Version": NOTION_API_VER },
+          body: form,
+        });
+        if (sendRes.ok) break;
+        if (sendRes.status !== 429 && sendRes.status < 500) {
+          throw new Error(`Notion rechazó el chunk: ${sendRes.status} - ${await sendRes.text()}`);
+        }
+        lastErr = new Error(`Notion ${sendRes.status}`);
+      } catch (e) {
+        lastErr = e; // p. ej. "fetch failed"
+      }
+      await new Promise((r) => setTimeout(r, 600 * 2 ** attempt + Math.random() * 300));
+    }
+    if (!sendRes || !sendRes.ok) {
+      throw lastErr || new Error("No se pudo enviar el chunk tras varios intentos.");
+    }
     const result = (await sendRes.json()) as any;
     try { fs.unlinkSync(req.file.path); } catch {}
     res.json({ success: true, id: result.id, status: result.status, partNumber: part_number ? parseInt(part_number, 10) : 1 });
@@ -506,7 +526,7 @@ app.post("/api/upload-complete", async (req, res) => {
 const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp", "image/svg+xml", "image/bmp", "image/tiff"]);
 
 app.post("/api/submit", async (req, res) => {
-  const { senderName, senderEmail, projectId, projectName, fileRecords = [], comment = "", document = "", dest = "", year = "", period = "" } = req.body;
+  const { senderName, senderEmail, projectId, projectName, fileRecords = [], comment = "", document = "", dest = "", year = "", period = "", program = "", accentColor = "" } = req.body;
   const trimmedComment = String(comment || "").trim();
   const trimmedDocument = String(document || "").trim();
   const destType = String(dest || "").trim() === DEST_DATA ? DEST_DATA : DEST_REGISTRO;
@@ -564,6 +584,35 @@ app.post("/api/submit", async (req, res) => {
     });
     const notionBlockId = appendRes?.results?.[0]?.id || "";
 
+    const timestamp = new Date().toISOString();
+
+    // Correo de confirmación (best-effort: no bloquea ni hace fallar la respuesta).
+    const gmailCreds = {
+      clientId: process.env.GMAIL_CLIENT_ID || "",
+      clientSecret: process.env.GMAIL_CLIENT_SECRET || "",
+      refreshToken: process.env.GMAIL_REFRESH_TOKEN || "",
+      sender: process.env.GMAIL_SENDER || "",
+      senderName: process.env.MAIL_FROM_NAME || "Universidad de Nariño",
+    };
+    if (hasGmailCredentials(gmailCreds)) {
+      const common = {
+        name: String(senderName).trim(),
+        email: String(senderEmail).trim(),
+        document: trimmedDocument,
+        category: projectName || "Evento",
+        year: String(year || "").trim() || undefined,
+        period: String(period || "").trim() || undefined,
+        timestamp,
+        accentColor: String(accentColor || "").trim() || undefined,
+      };
+      const mail = destType === DEST_DATA
+        ? buildMaterialEmail({ ...common, files: fileRecords.map((f: any) => ({ name: f.name, size: f.size })) })
+        : buildPreinscripcionEmail({ ...common, program: String(program || "").trim() || undefined });
+      // No await: el envío ocurre en segundo plano. Si falla, solo se registra.
+      sendGmailMessage(gmailCreds, { to: common.email, toName: common.name, subject: mail.subject, html: mail.html, text: mail.text })
+        .catch((e) => console.error("No se pudo enviar el correo de confirmación:", e?.message || e));
+    }
+
     res.json({
       success: true,
       message: "Registrado en Notion con éxito.",
@@ -571,7 +620,7 @@ app.post("/api/submit", async (req, res) => {
         id: "sub_" + Date.now(),
         projectId, projectName: projectName || "Categoría de Notion",
         senderName: String(senderName).trim(), senderEmail: String(senderEmail).trim(),
-        timestamp: new Date().toISOString(), notionBlockId,
+        timestamp, notionBlockId,
         comment: trimmedComment, document: trimmedDocument,
         files: fileRecords.map((f: any) => ({ name: f.name, size: f.size })),
       },

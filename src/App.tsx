@@ -182,6 +182,8 @@ export default function App() {
           document: preDoc.trim(),
           dest: "1REGISTRO",
           year, period,
+          program: preProgram.trim(),
+          accentColor: accent,
         }),
       });
       const data = await res.json();
@@ -244,6 +246,7 @@ export default function App() {
           document: matDoc.trim(),
           dest: "2DATA",
           year, period,
+          accentColor: accent,
         }),
       });
       const data = await res.json();

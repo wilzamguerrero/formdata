@@ -17,5 +17,6 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["node"]
   },
-  "include": ["src", "server.ts", "vite.config.ts"]
+  "include": ["src", "server.ts", "email.ts", "vite.config.ts"],
+  "exclude": ["functions", "node_modules", "dist"]
 }

@@ -35,6 +35,10 @@ const MIN_CONCURRENCY = 2;
 const MAX_CONCURRENCY = 12;
 const THROTTLE_COOLDOWN_MS = 1500;
 
+/** Partes simultáneas por archivo grande (mismo upload_id en Notion). Mantenerlo
+ *  bajo evita "fetch failed" por saturar el mismo upload con 15+ chunks a la vez. */
+const PARTS_CONCURRENCY = 3;
+
 const SMALL_FILE_POOL = MAX_CONCURRENCY;
 const LARGE_FILE_POOL = 3;
 
@@ -295,7 +299,21 @@ const uploadOneFile = async (
 
   report(0, `Subiendo ${label} — 0/${numberOfParts} partes (0%)`);
 
-  await Promise.all(Array.from({ length: numberOfParts }, (_, i) => uploadPart(i + 1)));
+  // Subir las partes con concurrencia LIMITADA. Lanzar las N partes a la vez
+  // (Promise.all directo) satura el mismo upload_id en Notion y provoca
+  // "fetch failed" (sockets agotados / rechazo del lado de Notion). Un pool
+  // pequeño sube varias en paralelo sin saturar; el semáforo global sigue
+  // coordinando con los demás archivos.
+  const PART_POOL = Math.min(PARTS_CONCURRENCY, numberOfParts);
+  let nextPart = 0;
+  const partWorker = async (): Promise<void> => {
+    while (true) {
+      const p = nextPart++;
+      if (p >= numberOfParts) return;
+      await uploadPart(p + 1);
+    }
+  };
+  await Promise.all(Array.from({ length: PART_POOL }, () => partWorker()));
 
   if (mode === "multi_part") {
     report(99, `Finalizando ${label}...`);

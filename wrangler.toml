@@ -1,0 +1,17 @@
+name = "udenar-eventos"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+# Las credenciales NO van aquí. Configúralas en el panel de Cloudflare Pages:
+#   Settings → Variables and secrets  (o con: wrangler pages secret put NOMBRE)
+#
+# Requeridas:
+#   NOTION_SECRET        token de la integración de Notion
+#   NOTION_ID_PAGE       id de la página madre (EventosUdenar)
+#
+# Opcionales (correo de confirmación por Gmail API):
+#   GMAIL_CLIENT_ID
+#   GMAIL_CLIENT_SECRET
+#   GMAIL_REFRESH_TOKEN
+#   GMAIL_SENDER
+#   MAIL_FROM_NAME       (por defecto "Universidad de Nariño")
