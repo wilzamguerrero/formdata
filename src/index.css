@@ -79,7 +79,7 @@ body {
 }
 .upz-square:hover { transform: translateY(-6px) scale(1.02); border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.1); box-shadow: 0 24px 60px -24px rgba(0,0,0,0.9); }
 .upz-square:active { transform: translateY(-2px) scale(0.99); }
-.upz-square .upz-initials { font-weight: 900; letter-spacing: -0.04em; line-height: 1; font-size: clamp(2rem, 6vw, 3rem); text-shadow: 0 2px 20px rgba(0,0,0,0.35); }
+.upz-square .upz-initials { font-weight: 900; letter-spacing: -0.04em; line-height: 1; font-size: clamp(2rem, 6vw, 3rem); text-shadow: 0 0 24px currentColor; }
 .upz-square .upz-square-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; opacity: 0.85; text-align: center; padding: 0 0.5rem; }
 
 .upz-square-add { background: transparent; border: 1px dashed rgba(255,255,255,0.25); color: rgba(255,255,255,0.5); }

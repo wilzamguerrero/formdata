@@ -42,8 +42,8 @@ const initialsOf = (name: string): string => {
 };
 
 const CATEGORY_COLORS = [
-  "#4f46e5", "#db2777", "#0891b2", "#ea580c", "#16a34a",
-  "#9333ea", "#dc2626", "#0d9488", "#ca8a04", "#2563eb",
+  "#8b5cf6", "#f43f5e", "#06b6d4", "#f97316", "#22c55e",
+  "#a855f7", "#ef4444", "#14b8a6", "#eab308", "#3b82f6",
 ];
 const colorFor = (i: number) => CATEGORY_COLORS[i % CATEGORY_COLORS.length];
 
