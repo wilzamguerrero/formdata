@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #0a0b12;
+  color: #ffffff;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Fondo dinámico suave: manchas de color plano que flotan lento.
+   ══════════════════════════════════════════════════════════════════════════ */
+.upz-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: var(--upz-bg-base, #0a0b12);
+}
+
+.upz-bg .upz-blob {
+  position: absolute;
+  width: 55vmax;
+  height: 55vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.5;
+  will-change: transform;
+  mix-blend-mode: screen;
+  transition: background 0.6s ease;
+}
+
+.upz-bg .upz-blob-1 { background: var(--upz-c1, #4f46e5); top: -15vmax; left: -10vmax; animation: upzFloat1 26s ease-in-out infinite; }
+.upz-bg .upz-blob-2 { background: var(--upz-c2, #db2777); bottom: -18vmax; right: -12vmax; animation: upzFloat2 32s ease-in-out infinite; }
+.upz-bg .upz-blob-3 { background: var(--upz-c3, #0891b2); top: 30%; left: 35%; animation: upzFloat3 38s ease-in-out infinite; }
+
+.upz-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes upzFloat1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(8vmax,6vmax) scale(1.12); } }
+@keyframes upzFloat2 { 0%,100% { transform: translate(0,0) scale(1.05); } 50% { transform: translate(-7vmax,-5vmax) scale(0.92); } }
+@keyframes upzFloat3 { 0%,100% { transform: translate(-50%,-50%) scale(1); } 50% { transform: translate(-42%,-58%) scale(1.15); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .upz-bg .upz-blob { animation: none; }
+}
+
+/* Botones cuadrados de categoría. */
+.upz-square {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border-radius: 24px;
+  cursor: pointer;
+  overflow: hidden;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
+  box-shadow: 0 10px 40px -20px rgba(0, 0, 0, 0.8);
+}
+.upz-square:hover { transform: translateY(-6px) scale(1.02); border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.1); box-shadow: 0 24px 60px -24px rgba(0,0,0,0.9); }
+.upz-square:active { transform: translateY(-2px) scale(0.99); }
+.upz-square .upz-initials { font-weight: 900; letter-spacing: -0.04em; line-height: 1; font-size: clamp(2rem, 6vw, 3rem); text-shadow: 0 2px 20px rgba(0,0,0,0.35); }
+.upz-square .upz-square-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; opacity: 0.85; text-align: center; padding: 0 0.5rem; }
+
+.upz-square-add { background: transparent; border: 1px dashed rgba(255,255,255,0.25); color: rgba(255,255,255,0.5); }
+.upz-square-add:hover { background: rgba(255,255,255,0.04); color: #fff; }
+
+/* Scrollbar fina */
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.18); border-radius: 999px; }
