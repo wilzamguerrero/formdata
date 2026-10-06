@@ -38,6 +38,7 @@ npm install
 npm run dev              # http://localhost:3000
 ```
 
+
 ### Probar las Functions de Cloudflare localmente
 ```bash
 # .dev.vars contiene NOTION_SECRET y NOTION_ID_PAGE (no se commitea)
